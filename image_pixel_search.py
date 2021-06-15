@@ -6,6 +6,7 @@ from skimage import data
 from skimage.color import gray2rgb
 from PIL import Image
 
+#https://stackoverflow.com/a/29669787/13734176
 def find_image(im, tpl):
     im = np.atleast_3d(im)
     tpl = np.atleast_3d(tpl)

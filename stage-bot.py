@@ -332,7 +332,7 @@ def bot_process(device, jobiter):
 
 def bot_select_mission(device, stage_name):
     if stage_name != 'tactical_drill':
-        stage_name = '%s-%s' % (datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=-7))).strftime('%A').lower(), stage_name)
+        stage_name = '%s-%s' % (datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=-10))).strftime('%A').lower(), stage_name)
 
     # must be on main menu
     for i in range(1,select_mission_job[stage_name]+1):
