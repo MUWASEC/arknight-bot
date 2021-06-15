@@ -7,11 +7,13 @@ from pytesseract import pytesseract
 import cv2
 from time import sleep, time
 from datetime import datetime,timezone,timedelta
+import argparse
 
 
 # global var
 pytesseract.tesseract_cmd = '/usr/sbin/tesseract'
 total_done=0
+restore_sanity=False
 magic_xy = {
     'autodeploy_check' : {
         'x': 1899,
@@ -60,52 +62,269 @@ magic_xy = {
         'y': 1030
     },
 }
-    # 1728, 270
-    # 345, 996
-    # 300, 496
-    # 1561, 265
 
+mission_stage_metadata = {
+    'supplies': {
+        'offset': {
+            # select & open stage
+            'open_combat': {
+                'x': 1728,
+                'y': 270
+            },
+            'select_stage': {
+                'x': 345,
+                'y': 996
+            },
 
-select_mission = {
-    'tactical_drill_01': {
-        'x': 1728,
-        'y': 270
-    },
-    'tactical_drill_02': {
-        'x': 345,
-        'y': 996
-    },
-    'tactical_drill_03': {
-        'x': 300,
-        'y': 496
-    },
-    'tactical_drill_04': {
-        'x': 1561,
-        'y': 265
+            # select operation number
+            'operation_1': {
+                'x': 553,
+                'y': 860
+            },
+            'operation_2': {
+                'x': 974,
+                'y': 789
+            },
+            'operation_3': {
+                'x': 1272,
+                'y': 609
+            },
+            'operation_4': {
+                'x': 1525,
+                'y': 436
+            },
+            'operation_5': {
+                'x': 1561,
+                'y': 265
+            },
+        },
+
+        # supplies stage selector
+        'LS': {
+            'schedule': {
+                'Mon': {
+                    'x': 300,
+                    'y': 496
+                },
+                'Tue': {
+                    'x': 300,
+                    'y': 496
+                },
+                'Wed': {
+                    'x': 300,
+                    'y': 496
+                },
+                'Thu': {
+                    'x': 300,
+                    'y': 496
+                },
+                'Fri': {
+                    'x': 300,
+                    'y': 496
+                },
+                'Sat': {
+                    'x': 300,
+                    'y': 496
+                },
+                'Sun': {
+                    'x': 300,
+                    'y': 496
+                }
+            }
+            
+        },
+        'CA': {
+            'schedule': {
+                'Tue': {
+                    'x': 710,
+                    'y': 496
+                },
+                'Wed': {
+                    'x': 300,
+                    'y': 496
+                },
+                'Fri': {
+                    'x': 300,
+                    'y': 496
+                },
+                'Sun': {
+                    'x': 300,
+                    'y': 496
+                }
+            }
+        },
+        'CE': {
+            'schedule': {
+                'Tue': {
+                    'x': 1100,
+                    'y': 496
+                },
+                'Thu': {
+                    'x': 300,
+                    'y': 496
+                },
+                'Sat': {
+                    'x': 300,
+                    'y': 496
+                },
+                'Sun': {
+                    'x': 300,
+                    'y': 496
+                } 
+            }
+        },
+        'tough_siege': {
+            'schedule': {
+                'Mon': {
+                    'x': 710,
+                    'y': 496
+                },
+                'Thu': {
+                    'x': 300,
+                    'y': 496
+                },
+                'Sat': {
+                    'x': 300,
+                    'y': 496
+                },
+                'Sun': {
+                    'x': 300,
+                    'y': 496
+                }
+            }
+        },
+        'resource_research': {
+            'schedule': {
+                'Mon': {
+                    'x': 1100,
+                    'y': 496
+                },
+                'Wed': {
+                    'x': 300,
+                    'y': 496
+                },
+                'Fri': {
+                    'x': 300,
+                    'y': 496
+                },
+                'Sat': {
+                    'x': 300,
+                    'y': 496
+                }
+            }
+        }
     },
 
-    'monday-tough_siege_01': {
-        'x': 1728,
-        'y': 270
-    },
-    'monday-tough_siege_02': {
-        'x': 345,
-        'y': 996
-    },
-    'monday-tough_siege_03': {
-        'x': 705,
-        'y': 500
-    },
-    'monday-tough_siege_04': {
-        'x': 1561,
-        'y': 265
-    },
+    'chips': {
+        'offset': {
+            # select & open stage
+            'open_combat': {
+                'x': 1728,
+                'y': 270
+            },
+            'select_stage': {
+                'x': 576,
+                'y': 996
+            },
+
+            # select operation number
+            'operation_1': {
+                'x': 700,
+                'y': 665
+            },
+            'operation_2': {
+                'x': 1420,
+                'y': 370
+            }
+        },
+
+        # chips stage selector
+        'PR-A': {
+            'schedule': {
+                'Mon': {
+                    'x': 505,
+                    'y': 496
+                },
+                'Thu': {
+                    'x': 300,
+                    'y': 496
+                },
+                'Fri': {
+                    'x': 300,
+                    'y': 496
+                },
+                'Sun': {
+                    'x': 300,
+                    'y': 496
+                }
+            }
+        },
+        'PR-B': {
+            'schedule': {
+                'Mon': {
+                    'x': 910,
+                    'y': 496
+                },
+                'Tue': {
+                    'x': 505,
+                    'y': 496
+                },
+                'Fri': {
+                    'x': 300,
+                    'y': 496
+                },
+                'Sat': {
+                    'x': 300,
+                    'y': 496
+                }
+            }
+        },
+        'PR-C': {
+            'schedule': {
+                'Mon': {
+                    'x': 910,
+                    'y': 496
+                },
+                'Tue': {
+                    'x': 505,
+                    'y': 496
+                },
+                'Fri': {
+                    'x': 300,
+                    'y': 496
+                },
+                'Sat': {
+                    'x': 300,
+                    'y': 496
+                }
+            }
+        },
+        'PR-D': {
+            'schedule': {
+                'Tue': {
+                    'x': 910,
+                    'y': 496
+                },
+                'Wed': {
+                    'x': 300,
+                    'y': 496
+                },
+                'Sat': {
+                    'x': 300,
+                    'y': 496
+                },
+                'Sun': {
+                    'x': 300,
+                    'y': 496
+                }
+            }
+        },
+        
+    }
 }
-select_mission_job = {
-    'tactical_drill': 4,
-    'monday-tough_siege': 4,
-}
 
+#115,20,20 = error
+#15,15,15 = update
 magic_rgb = {
     'autodeploy': {
         'r':255,
@@ -132,7 +351,30 @@ magic_rgb = {
     },
 }
 
+#https://stackoverflow.com/a/29669787/13734176
+def find_image(im, tpl):
+    im = np.atleast_3d(im)
+    tpl = np.atleast_3d(tpl)
+    H, W, D = im.shape[:3]
+    h, w = tpl.shape[:2]
 
+    # Integral image and template sum per channel
+    sat = im.cumsum(1).cumsum(0)
+    tplsum = np.array([tpl[:, :, i].sum() for i in range(D)])
+
+    # Calculate lookup table for all the possible windows
+    iA, iB, iC, iD = sat[:-h, :-w], sat[:-h, w:], sat[h:, :-w], sat[h:, w:] 
+    lookup = iD - iB - iC + iA
+    # Possible matches
+    possible_match = np.where(np.logical_and.reduce([lookup[..., i] == tplsum[i] for i in range(D)]))
+
+    # Find exact match
+    for y, x in zip(*possible_match):
+        if np.all(im[y+1:y+h+1, x+1:x+w+1] == tpl):
+            return f'{y+1}|{x+1}'
+
+    return False
+    
 def do_screenshot(device):
     image = device.screencap()
     with open('screen.png', 'wb') as fd:
@@ -226,35 +468,38 @@ def get_sanity():
     except:
         cv2.imwrite('crop.png', img)
         return str_res
-    
-def restore_sanity(device, sanity, max_sanity, full=1):
+
+def return_to_main_menu(device):
+    iter=0
+    while True:
+        if iter>3:
+            sleep(0.5)
+            do_screenshot(device)
+            image = Image.open('screen.png')
+            image_arr = np.array(image)
+            image_arr = image_arr[
+                # y
+                # top - bottom
+                450:535, 
+                # x
+                # left - right
+                862:1356]
+            image = Image.fromarray(image_arr)
+            image.save('crop.png')
+
+            img = cv2.imread('./crop.png')
+            device.shell("input keyevent 4")
+            if pytesseract.image_to_string(img).split('\n')[0] == "Are you sure you want to exit?":
+                break
+        else:
+            device.shell("input keyevent 4")
+            print(f'[{iter}] back button')
+        iter+=1
+
+def do_restore_sanity(device, sanity, max_sanity, full=1):
     if full:
         # go back to the main menu
-        iter=0
-        while True:
-            if iter>3:
-                sleep(0.5)
-                do_screenshot(device)
-                image = Image.open('screen.png')
-                image_arr = np.array(image)
-                image_arr = image_arr[
-                    # y
-                    # top - bottom
-                    450:535, 
-                    # x
-                    # left - right
-                    862:1356]
-                image = Image.fromarray(image_arr)
-                image.save('crop.png')
-
-                img = cv2.imread('./crop.png')
-                device.shell("input keyevent 4")
-                if pytesseract.image_to_string(img).split('\n')[0] == "Are you sure you want to exit?":
-                    break
-            else:
-                device.shell("input keyevent 4")
-                print(f'[{iter}] back button')
-            iter+=1
+        return_to_main_menu(device)
 
         # main menu
         print(f'\n[!] do restore sanity, hope your orundum is enough :p\nsanity : {sanity}\nmax_sanity : {max_sanity}')
@@ -264,7 +509,10 @@ def restore_sanity(device, sanity, max_sanity, full=1):
             sleep(1)
             device.shell("input touchscreen tap {0} {1}".format(magic_xy['confirm_restore_sanity_button']['x'], magic_xy['confirm_restore_sanity_button']['y']))
             sleep(4.5)
+            sanity+=max_sanity
         print('\n', end='', flush=True)
+        print(f'\n[!!!] sanity has been restored\nsanity : {sanity}\n')
+
 
 def bot_process(device, jobiter):
     global total_done
@@ -289,13 +537,12 @@ def bot_process(device, jobiter):
 
                 # output time spend & info
                 tstart=time()
-                if total_done:
+                if tend:
                     print(f'\n[*]===============| time spend {int(tstart-tend)}s/{(int(tstart-tend)/60):.1f}m |===============[*]')
                     print(f'[+] {total_done} mission has been done')
                     print(f'[+] current sanity now is {sanity}\n')
                 tend=time()
                 total_done+=1
-
                 device.shell("input touchscreen tap {0} {1}".format(magic_xy['autodeploy_tap']['x'], magic_xy['autodeploy_tap']['y']))
                 break
             else:
@@ -311,9 +558,12 @@ def bot_process(device, jobiter):
             else:
                 rs,gs,bs = [int(j) for j in [list(i[:3]) for i in image[magic_xy['sanity_check']['y']]][magic_xy['sanity_check']['x']]]
                 if {'r': rs, 'g': gs, 'b': bs} == magic_rgb['sanity_check']:
-                    print(f'[{rs},{gs},{bs}] sanity not enough :(')
-                    restore_sanity(device, sanity, max_sanity)
-                    return True
+                    print(f'[{rs},{gs},{bs}] sanity not enough :(\n')
+                    if restore_sanity:
+                        do_restore_sanity(device, sanity, max_sanity)
+                        return True
+                    else:
+                        return False
                 print(f'[{r},{g},{b}] mission_start check not found')
 
         # third stage
@@ -330,35 +580,64 @@ def bot_process(device, jobiter):
                 else:
                     print(f'[{r},{g},{b}] mission_complete check not found')
 
+def get_stage_group_name(stage_name):
+    for mission_key in mission_stage_metadata:
+        if stage_name in mission_stage_metadata[mission_key]:
+            return mission_key
+    return False
+
+
+
 def bot_select_mission(device, stage_name):
-    if stage_name != 'tactical_drill':
-        stage_name = '%s-%s' % (datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=-10))).strftime('%A').lower(), stage_name)
+    ops_name = stage_name[::-1].split('-', 1)[1][::-1]
+    ops_num = stage_name[::-1].split('-', 1)[0][::-1]
+    stage_group = get_stage_group_name(ops_name)
+    if not stage_group:
+        print('[!] record for stage name not found!')
+        exit(1)
+
+    date_now = datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=-11))).strftime('%a')
+    if date_now not in mission_stage_metadata[stage_group][ops_name]['schedule']:
+        print(f'[!] {stage_name} currently unavailable.')
+        return False
 
     # must be on main menu
-    for i in range(1,select_mission_job[stage_name]+1):
-        device.shell("input touchscreen tap {0} {1}".format(select_mission[f'{stage_name}_0{i}']['x'], select_mission[f'{stage_name}_0{i}']['y']))
-        sleep(1)
+    device.shell("input touchscreen tap {0} {1}".format(mission_stage_metadata[stage_group]['offset']['open_combat']['x'], mission_stage_metadata[stage_group]['offset']['open_combat']['y']))
+    sleep(1)
+    device.shell("input touchscreen tap {0} {1}".format(mission_stage_metadata[stage_group]['offset']['select_stage']['x'], mission_stage_metadata[stage_group]['offset']['select_stage']['y']))
+    sleep(1)
+    device.shell("input touchscreen tap {0} {1}".format(mission_stage_metadata[stage_group][ops_name]['schedule'][date_now]['x'], mission_stage_metadata[stage_group][ops_name]['schedule'][date_now]['y']))
+    sleep(1)
+    device.shell("input touchscreen tap {0} {1}".format(mission_stage_metadata[stage_group]['offset'][f'operation_{ops_num}']['x'], mission_stage_metadata[stage_group]['offset'][f'operation_{ops_num}']['y']))
+    sleep(1)
+
+    return True
 
 if __name__ == "__main__":
-    adb = Client(host='127.0.0.1', port=5037)
-    device = adb.devices()[0]#adb.device("192.168.18.182:5555")
-    # image = do_screenshot(device)
-    # r,g,b = [int(j) for j in [list(i[:3]) for i in image[magic_xy['mission_start_check']['y']]][magic_xy['mission_start_check']['x']]]
-    # print(r,g,b)
-    # exit()
-    job=[
-        'tactical_drill',
-        'tough_siege'
-    ]
+    parser = argparse.ArgumentParser(description='Arknight Stage Bot')
+    parser.add_argument('-j', '--job-list', dest='job_list', help='xx: -j/--job-list "CE-5:20|CA:30"')
+    parser.add_argument('-a', '--automate', type=int, dest='only_automate', help='just do automation, select the stage to automate first!')
+    parser.add_argument('-s', '--sanity', action='store_true', dest='sanity_restore', help='with sanity restoration.')
+    args = parser.parse_args()
 
-
-    try:
-        jobiter = int(input('~max_job = '))
-    except:
-        jobiter = 99
-
+    if not args.job_list and not args.only_automate:
+        parser.print_help()
+        exit(1)
+    else:
+        adb = Client(host='127.0.0.1', port=5037)
+        device = adb.devices()[0]
+        
     # main
-    while True:
-        bot_select_mission(device, job[1])
-        if not bot_process(device, jobiter):
-            exit(0)
+    if args.sanity_restore:
+        restore_sanity=True
+    if args.job_list:
+        for x in args.job_list.split('|'):
+            job_name = x.split(':')[0]
+            job_count = int(x.split(':')[1])
+            if not bot_select_mission(device, job_name):
+                continue
+            if not bot_process(device, job_count):
+                exit(0)
+    elif args.only_automate:
+        job_count = args.only_automate
+        bot_process(device, job_count)
