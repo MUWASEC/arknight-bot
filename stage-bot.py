@@ -14,6 +14,7 @@ import argparse
 pytesseract.tesseract_cmd = '/usr/sbin/tesseract'
 total_done=0
 restore_sanity=False
+restore_sanity_check=False
 magic_xy = {
     'autodeploy_check' : {
         'x': 1899,
@@ -436,7 +437,7 @@ def get_sanity():
             img = cv2.medianBlur(img,9)
             str_res = pytesseract.image_to_string(img, config=custom_oem)
             if '/' in str_res and str_res[0]!='/':
-                print(f'complete brute force at {i}')
+                print(f'\n[*] complete brute force at {i}\n')
                 raise Exception()
             
         img = cv2.imread('crop.png')
@@ -447,7 +448,7 @@ def get_sanity():
             img = cv2.medianBlur(img,9)
             str_res = pytesseract.image_to_string(img, config=custom_oem)
             if '/' in str_res and str_res[0]!='/':
-                print(f'complete brute force at {i}')
+                print(f'\n[*] complete brute force at {i}\n')
                 raise Exception()
 
         # white pixels to black with GRAY
@@ -470,6 +471,7 @@ def get_sanity():
         return str_res
 
 def return_to_main_menu(device):
+    print('\n[!] going back to the main menu ...')
     iter=0
     while True:
         if iter>3:
@@ -497,19 +499,21 @@ def return_to_main_menu(device):
         iter+=1
 
 def do_restore_sanity(device, sanity, max_sanity, full=1):
+    global restore_sanity_check
     if full:
         # go back to the main menu
         return_to_main_menu(device)
 
         # main menu
         print(f'\n[!] do restore sanity, hope your orundum is enough :p\nsanity : {sanity}\nmax_sanity : {max_sanity}')
-        for i in range(int((999+sanity)/max_sanity)):
+        for i in range(int((131+sanity)/max_sanity)):
             print('.', end='', flush=True)
             device.shell("input touchscreen tap {0} {1}".format(magic_xy['restore_sanity_button']['x'], magic_xy['restore_sanity_button']['y']))
             sleep(1)
             device.shell("input touchscreen tap {0} {1}".format(magic_xy['confirm_restore_sanity_button']['x'], magic_xy['confirm_restore_sanity_button']['y']))
             sleep(4.5)
             sanity+=max_sanity
+        restore_sanity_check=True
         print('\n', end='', flush=True)
         print(f'\n[!!!] sanity has been restored\nsanity : {sanity}\n')
 
@@ -527,7 +531,7 @@ def bot_process(device, jobiter):
                 sanity = get_sanity()
                 if jobiter==total_done:
                     print(f'\n[!] {total_done} job is complete')
-                    return False
+                    return True
                 elif '/' not in sanity:
                     print(f'\n[!] ocr error :(\n{sanity}')
                     return False
@@ -615,7 +619,7 @@ def bot_select_mission(device, stage_name):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Arknight Stage Bot')
-    parser.add_argument('-j', '--job-list', dest='job_list', help='xx: -j/--job-list "CE-5:20|CA:30"')
+    parser.add_argument('-j', '--job-list', dest='job_list', help='xx: -j/--job-list "CE-5:20;CA-5:30"')
     parser.add_argument('-a', '--automate', type=int, dest='only_automate', help='just do automation, select the stage to automate first!')
     parser.add_argument('-s', '--sanity', action='store_true', dest='sanity_restore', help='with sanity restoration.')
     args = parser.parse_args()
@@ -631,13 +635,20 @@ if __name__ == "__main__":
     if args.sanity_restore:
         restore_sanity=True
     if args.job_list:
-        for x in args.job_list.split('|'):
+        for x in args.job_list.split(';'):
             job_name = x.split(':')[0]
             job_count = int(x.split(':')[1])
-            if not bot_select_mission(device, job_name):
-                continue
-            if not bot_process(device, job_count):
-                exit(0)
+            while True:
+                if not bot_select_mission(device, job_name):
+                    break
+                if not bot_process(device, job_count):
+                    exit(0)
+                if total_done >= job_count:
+                    total_done = 0
+                    break
+            if not restore_sanity_check:
+                restore_sanity_check=False
+                return_to_main_menu(device)
     elif args.only_automate:
         job_count = args.only_automate
         bot_process(device, job_count)
