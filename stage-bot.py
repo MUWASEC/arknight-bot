@@ -12,6 +12,7 @@ import argparse
 
 # global var
 pytesseract.tesseract_cmd = '/usr/sbin/tesseract'
+job_list=[]
 total_done=0
 restore_sanity=False
 restore_sanity_check=False
@@ -53,6 +54,11 @@ magic_xy = {
         'y': 60 
     },
 
+    'restore_sanity_onstage_tap': {
+        'x': 1782,
+        'y': 865
+    },
+
     'restore_sanity_button': {
         'x': 1345,
         'y': 274
@@ -62,10 +68,44 @@ magic_xy = {
         'x': 1815,
         'y': 1030
     },
+
+    'connection_error_tap': {
+        'x': 1485,
+        'y': 768
+    }
+}
+
+#115,20,20 = error
+#15,15,15 = update
+magic_rgb = {
+    'autodeploy': {
+        'r':255,
+        'g':255,
+        'b':255
+    },
+    
+    'mission_start': {
+        'r':0,
+        'g':152,
+        'b':220
+    },
+
+    'mission_complete': {
+        'r':255,
+        'g':150,
+        'b':2
+    },
+
+    'sanity_check': {
+        'r':176,
+        'g':176,
+        'b':176
+    },
 }
 
 mission_stage_metadata = {
     'supplies': {
+        'total_stage': 5,
         'offset': {
             # select & open stage
             'open_combat': {
@@ -141,15 +181,15 @@ mission_stage_metadata = {
                     'y': 496
                 },
                 'Wed': {
-                    'x': 300,
+                    'x': 710,
                     'y': 496
                 },
                 'Fri': {
-                    'x': 300,
+                    'x': 710,
                     'y': 496
                 },
                 'Sun': {
-                    'x': 300,
+                    'x': 0,
                     'y': 496
                 }
             }
@@ -161,40 +201,40 @@ mission_stage_metadata = {
                     'y': 496
                 },
                 'Thu': {
-                    'x': 300,
+                    'x': 1100,
                     'y': 496
                 },
                 'Sat': {
-                    'x': 300,
+                    'x': 0,
                     'y': 496
                 },
                 'Sun': {
-                    'x': 300,
+                    'x': 0,
                     'y': 496
                 } 
             }
         },
-        'tough_siege': {
+        'AP': {
             'schedule': {
                 'Mon': {
                     'x': 710,
                     'y': 496
                 },
                 'Thu': {
-                    'x': 300,
+                    'x': 710,
                     'y': 496
                 },
                 'Sat': {
-                    'x': 300,
+                    'x': 0,
                     'y': 496
                 },
                 'Sun': {
-                    'x': 300,
+                    'x': 0,
                     'y': 496
                 }
             }
         },
-        'resource_research': {
+        'SK': {
             'schedule': {
                 'Mon': {
                     'x': 1100,
@@ -205,11 +245,11 @@ mission_stage_metadata = {
                     'y': 496
                 },
                 'Fri': {
-                    'x': 300,
+                    'x': 1100,
                     'y': 496
                 },
                 'Sat': {
-                    'x': 300,
+                    'x': 0,
                     'y': 496
                 }
             }
@@ -217,6 +257,7 @@ mission_stage_metadata = {
     },
 
     'chips': {
+        'total_stage': 2,
         'offset': {
             # select & open stage
             'open_combat': {
@@ -247,15 +288,15 @@ mission_stage_metadata = {
                     'y': 496
                 },
                 'Thu': {
-                    'x': 300,
+                    'x': 505,
                     'y': 496
                 },
                 'Fri': {
-                    'x': 300,
+                    'x': 505,
                     'y': 496
                 },
                 'Sun': {
-                    'x': 300,
+                    'x': 0,
                     'y': 496
                 }
             }
@@ -271,31 +312,31 @@ mission_stage_metadata = {
                     'y': 496
                 },
                 'Fri': {
-                    'x': 300,
+                    'x': 910,
                     'y': 496
                 },
                 'Sat': {
-                    'x': 300,
+                    'x': 0,
                     'y': 496
                 }
             }
         },
         'PR-C': {
             'schedule': {
-                'Mon': {
-                    'x': 910,
-                    'y': 496
-                },
-                'Tue': {
+                'Wed': {
                     'x': 505,
                     'y': 496
                 },
-                'Fri': {
-                    'x': 300,
+                'Thu': {
+                    'x': 910,
                     'y': 496
                 },
                 'Sat': {
-                    'x': 300,
+                    'x': 0,
+                    'y': 496
+                },
+                'Sun': {
+                    'x': 0,
                     'y': 496
                 }
             }
@@ -307,15 +348,15 @@ mission_stage_metadata = {
                     'y': 496
                 },
                 'Wed': {
-                    'x': 300,
+                    'x': 910,
                     'y': 496
                 },
                 'Sat': {
-                    'x': 300,
+                    'x': 0,
                     'y': 496
                 },
                 'Sun': {
-                    'x': 300,
+                    'x': 0,
                     'y': 496
                 }
             }
@@ -324,33 +365,80 @@ mission_stage_metadata = {
     }
 }
 
-#115,20,20 = error
-#15,15,15 = update
-magic_rgb = {
-    'autodeploy': {
-        'r':255,
-        'g':255,
-        'b':255
+daily_mission_metadata = {
+    'Supplies': {
+        'Mon': {
+            'LS': 'Tactical Drill (EXP)',
+            'AP': 'Tough Siege (Red Tickets)',
+            'SK': 'Resource Search (Base Material)',
+        },
+        'Tue': {
+            'LS': 'Tactical Drill (EXP)',
+            'CA': 'Aerial Threat (White, Green, Blue Skill Summary)',
+            'CE': 'Cargo Escort (LMD)',
+        },
+        'Wed': {
+            'LS': 'Tactical Drill (EXP)',
+            'CA': 'Aerial Threat (White, Green, Blue Skill Summary)',
+            'SK': 'Resource Search (Base Material)',
+        },
+        'Thu': {
+            'LS': 'Tactical Drill (EXP)',
+            'AP': 'Tough Siege (Red Tickets)',
+            'CE': 'Cargo Escort (LMD)',
+        },
+        'Fri': {
+            'LS': 'Tactical Drill (EXP)',
+            'CA': 'Aerial Threat (White, Green, Blue Skill Summary)',
+            'SK': 'Resource Search (Base Material)',
+        },
+        'Sat': {
+            'LS': 'Tactical Drill (EXP)',
+            'SK': 'Resource Search (Base Material)',
+            'AP': 'Tough Siege (Red Tickets)',
+            'CE': 'Cargo Escort (LMD)',
+        },
+        'Sun': {
+            'LS': 'Tactical Drill (EXP)',
+            'CA': 'Aerial Threat (White, Green, Blue Skill Summary)',
+            'AP': 'Tough Siege (Red Tickets)',
+            'CE': 'Cargo Escort (LMD)',
+        }
     },
-    
-    'mission_start': {
-        'r':0,
-        'g':152,
-        'b':220
-    },
-
-    'mission_complete': {
-        'r':255,
-        'g':150,
-        'b':2
-    },
-
-    'sanity_check': {
-        'r':176,
-        'g':176,
-        'b':176
-    },
+    'Chips': {
+        'Mon': {
+            'PR-A': 'Solid Defense (Defender/Medic)',
+            'PR-B': 'Fierce Attack (Caster/Sniper)'
+        },
+        'Tue': {
+            'PR-B': 'Fierce Attack (Caster/Sniper)',
+            'PR-D': 'Fearless Protection (Guard/Specialist)'
+        },
+        'Wed': {
+            'PR-C': 'Unstoppable Charge (Vanguard/Support)',
+            'PR-D': 'Fearless Protection (Guard/Specialist)'
+        },
+        'Thu': {
+            'PR-A': 'Solid Defense (Defender/Medic)',
+            'PR-C': 'Unstoppable Charge (Vanguard/Support)'
+        },
+        'Fri': {
+            'PR-A': 'Solid Defense (Defender/Medic)',
+            'PR-B': 'Fierce Attack (Caster/Sniper)'
+        },
+        'Sat': {
+            'PR-B': 'Fierce Attack (Caster/Sniper)',
+            'PR-C': 'Unstoppable Charge (Vanguard/Support)',
+            'PR-D': 'Fearless Protection (Guard/Specialist)'
+        },
+        'Sun': {
+            'PR-A': 'Solid Defense (Defender/Medic)',
+            'PR-C': 'Unstoppable Charge (Vanguard/Support)',
+            'PR-D': 'Fearless Protection (Guard/Specialist)'
+        }
+    }
 }
+
 
 #https://stackoverflow.com/a/29669787/13734176
 def find_image(im, tpl):
@@ -498,7 +586,7 @@ def return_to_main_menu(device):
             print(f'[{iter}] back button')
         iter+=1
 
-def do_restore_sanity(device, sanity, max_sanity, full=1):
+def do_restore_sanity(device, sanity, max_sanity, full=True):
     global restore_sanity_check
     if full:
         # go back to the main menu
@@ -506,7 +594,7 @@ def do_restore_sanity(device, sanity, max_sanity, full=1):
 
         # main menu
         print(f'\n[!] do restore sanity, hope your orundum is enough :p\nsanity : {sanity}\nmax_sanity : {max_sanity}')
-        for i in range(int((131+sanity)/max_sanity)):
+        for i in range(int((999+sanity)/max_sanity)):
             print('.', end='', flush=True)
             device.shell("input touchscreen tap {0} {1}".format(magic_xy['restore_sanity_button']['x'], magic_xy['restore_sanity_button']['y']))
             sleep(1)
@@ -515,11 +603,16 @@ def do_restore_sanity(device, sanity, max_sanity, full=1):
             sanity+=max_sanity
         restore_sanity_check=True
         print('\n', end='', flush=True)
-        print(f'\n[!!!] sanity has been restored\nsanity : {sanity}\n')
+    else:
+        print(f'\n[!] do restore sanity with your 1 orundum :3\nsanity : {sanity}\nmax_sanity : {max_sanity}')
+        device.shell("input touchscreen tap {0} {1}".format(magic_xy['restore_sanity_onstage_tap']['x'], magic_xy['restore_sanity_onstage_tap']['y']))
+        sleep(4.5)
+        sanity+=max_sanity
+    print(f'\n[!!!] sanity has been restored\nsanity : {sanity}\n')
 
 
 def bot_process(device, jobiter):
-    global total_done
+    global total_done, args
     tstart=0
     tend=0
     while True:
@@ -528,10 +621,14 @@ def bot_process(device, jobiter):
             image = do_screenshot(device)
             r,g,b = [int(j) for j in [list(i[:3]) for i in image[magic_xy['autodeploy_check']['y']]][magic_xy['autodeploy_check']['x']]]
             if {'r': r, 'g': g, 'b': b} == magic_rgb['autodeploy']:
+                # get sanity info
                 sanity = get_sanity()
                 if jobiter==total_done:
                     print(f'\n[!] {total_done} job is complete')
-                    return True
+                    if args.only_automate:
+                        return False
+                    else:
+                        return True
                 elif '/' not in sanity:
                     print(f'\n[!] ocr error :(\n{sanity}')
                     return False
@@ -564,13 +661,18 @@ def bot_process(device, jobiter):
                 if {'r': rs, 'g': gs, 'b': bs} == magic_rgb['sanity_check']:
                     print(f'[{rs},{gs},{bs}] sanity not enough :(\n')
                     if restore_sanity:
-                        do_restore_sanity(device, sanity, max_sanity)
+                        if args.only_automate:
+                            do_restore_sanity(device, sanity, max_sanity, full=False)
+                        else:
+                            do_restore_sanity(device, sanity, max_sanity)
                         return True
                     else:
                         return False
                 print(f'[{r},{g},{b}] mission_start check not found')
 
         # third stage
+        level_up=0
+        conn_err=0
         while True:
             image = do_screenshot(device)
             r,g,b = [int(j) for j in [list(i[:3]) for i in image[magic_xy['mission_complete_check']['y']]][magic_xy['mission_complete_check']['x']]]
@@ -578,31 +680,57 @@ def bot_process(device, jobiter):
                 device.shell("input touchscreen tap {0} {1}".format(magic_xy['mission_complete_tap']['x'], magic_xy['mission_complete_tap']['y']))
                 break
             else:
-                if {'r': r, 'g': g, 'b': b} == {'r': 1, 'g': 1, 'b': 1}:
+                if level_up == 15:
+                    level_up=0
                     print(f'[{r},{g},{b}] level up')
                     device.shell("input touchscreen tap {0} {1}".format(magic_xy['mission_complete_tap']['x'], magic_xy['mission_complete_tap']['y']))
+                elif conn_err == 5:
+                    print('[!!!] connection error')
+                    exit(0)
+                elif ({'r': r, 'g': g, 'b': b} == {'r': 1, 'g': 1, 'b': 1} or
+                      {'r': r, 'g': g, 'b': b} == {'r': 1, 'g': 1, 'b': 0}):
+                    level_up+=1
+                elif ({'r': r, 'g': g, 'b': b} == {'r': 115, 'g': 20, 'b': 20} or
+                      {'r': r, 'g': g, 'b': b} == {'r': 117, 'g': 20, 'b': 20}):
+                    print('[!] connection error, re-enter')
+                    device.shell("input touchscreen tap {0} {1}".format(magic_xy['connection_error_tap']['x'], magic_xy['connection_error_tap']['y']))
+                    sleep(3)
+                    conn_err+=1
                 else:
                     print(f'[{r},{g},{b}] mission_complete check not found')
 
 def get_stage_group_name(stage_name):
+    ops_name = stage_name[::-1].split('-', 1)[1][::-1]
+    ops_num = stage_name[::-1].split('-', 1)[0][::-1]
     for mission_key in mission_stage_metadata:
-        if stage_name in mission_stage_metadata[mission_key]:
-            return mission_key
+        if ops_name in mission_stage_metadata[mission_key]:
+            return [mission_key, ops_name, ops_num]
     return False
 
 
+def check_stage_exist(stage_name):
+    date_now = datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=-11))).strftime('%a')
+    for stage_key in stage_name:
+        for date in stage_key:
+            print()
+
 
 def bot_select_mission(device, stage_name):
-    ops_name = stage_name[::-1].split('-', 1)[1][::-1]
-    ops_num = stage_name[::-1].split('-', 1)[0][::-1]
-    stage_group = get_stage_group_name(ops_name)
-    if not stage_group:
+    resp = get_stage_group_name(stage_name)
+    if not resp:
         print('[!] record for stage name not found!')
         exit(1)
+    else:
+        stage_group = resp[0]
+        ops_name = resp[1]
+        ops_num = resp[2]
 
     date_now = datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=-11))).strftime('%a')
     if date_now not in mission_stage_metadata[stage_group][ops_name]['schedule']:
         print(f'[!] {stage_name} currently unavailable.')
+        exit(1)
+    elif int(ops_num) > mission_stage_metadata[stage_group]['total_stage']:
+        print(f'[!] {stage_name} is invalid.')
         return False
 
     # must be on main menu
@@ -619,36 +747,57 @@ def bot_select_mission(device, stage_name):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Arknight Stage Bot')
-    parser.add_argument('-j', '--job-list', dest='job_list', help='xx: -j/--job-list "CE-5:20;CA-5:30"')
+    parser.add_argument('-j', '--job-list', dest='job_list', help='ex: -j/--job-list "CE-5:20;CA-5:30"')
     parser.add_argument('-a', '--automate', type=int, dest='only_automate', help='just do automation, select the stage to automate first!')
     parser.add_argument('-s', '--sanity', action='store_true', dest='sanity_restore', help='with sanity restoration.')
+    parser.add_argument('-S', '--show', action='store_true', dest='show', help='show current daily mission.')
     args = parser.parse_args()
 
-    if not args.job_list and not args.only_automate:
+    if not args.job_list and not args.only_automate and not args.show:
         parser.print_help()
         exit(1)
+    elif args.show:
+        date_now = datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=-11))).strftime('%a')
+        for stage_key in daily_mission_metadata:
+            print(f'\n{"." + "_"*(len(stage_key)) + "."}\n|{stage_key}|\n{"." + "-"*(len(stage_key)) + "."}')
+            for stage_name in daily_mission_metadata[stage_key][date_now]:
+                print(f'||> {stage_name}')
+                print(f'|||> {daily_mission_metadata[stage_key][date_now][stage_name]}')
+        exit(0)
     else:
         adb = Client(host='127.0.0.1', port=5037)
         device = adb.devices()[0]
-        
+    
     # main
     if args.sanity_restore:
         restore_sanity=True
     if args.job_list:
-        for x in args.job_list.split(';'):
+        job_list=[x for x in args.job_list.split(';') if x != '']
+        for x in job_list:
+
             job_name = x.split(':')[0]
             job_count = int(x.split(':')[1])
+            if not get_stage_group_name(job_name):
+                print('[!] not a valid stage.')
+                exit(0)
+
             while True:
                 if not bot_select_mission(device, job_name):
                     break
                 if not bot_process(device, job_count):
                     exit(0)
+                else:
+                    restore_sanity_check=True
+
                 if total_done >= job_count:
                     total_done = 0
                     break
+                
             if not restore_sanity_check:
                 restore_sanity_check=False
                 return_to_main_menu(device)
     elif args.only_automate:
         job_count = args.only_automate
-        bot_process(device, job_count)
+        while True:
+            if not bot_process(device, job_count):
+                exit(0)
