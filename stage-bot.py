@@ -35,9 +35,15 @@ magic_xy = {
         'y': 800
     },
 
-    'mission_complete_check' : {
+    'mission_error_check' : {
         'x': 1400,
         'y': 730
+    },
+    'mission_complete_check' : {
+        # 'x': 1400,
+        # 'y': 730
+        'x': 70,
+        'y': 935
     },
     'mission_complete_tap' : {
         'x': 1080,
@@ -91,9 +97,12 @@ magic_rgb = {
     },
 
     'mission_complete': {
+        # 'r':255,
+        # 'g':150,
+        # 'b':2
         'r':255,
-        'g':150,
-        'b':2
+        'g':255,
+        'b':255
     },
 
     'sanity_check': {
@@ -141,6 +150,7 @@ mission_stage_metadata = {
         },
 
         # supplies stage selector
+        # 300,710,1120,1510
         'LS': {
             'schedule': {
                 'Mon': {
@@ -189,7 +199,7 @@ mission_stage_metadata = {
                     'y': 496
                 },
                 'Sun': {
-                    'x': 0,
+                    'x': 1120,
                     'y': 496
                 }
             }
@@ -197,19 +207,19 @@ mission_stage_metadata = {
         'CE': {
             'schedule': {
                 'Tue': {
-                    'x': 1100,
+                    'x': 1120,
                     'y': 496
                 },
                 'Thu': {
-                    'x': 1100,
+                    'x': 1120,
                     'y': 496
                 },
                 'Sat': {
-                    'x': 0,
+                    'x': 1510,
                     'y': 496
                 },
                 'Sun': {
-                    'x': 0,
+                    'x': 1510,
                     'y': 496
                 } 
             }
@@ -225,11 +235,11 @@ mission_stage_metadata = {
                     'y': 496
                 },
                 'Sat': {
-                    'x': 0,
+                    'x': 710,
                     'y': 496
                 },
                 'Sun': {
-                    'x': 0,
+                    'x': 710,
                     'y': 496
                 }
             }
@@ -237,7 +247,7 @@ mission_stage_metadata = {
         'SK': {
             'schedule': {
                 'Mon': {
-                    'x': 1100,
+                    'x': 1120,
                     'y': 496
                 },
                 'Wed': {
@@ -245,11 +255,11 @@ mission_stage_metadata = {
                     'y': 496
                 },
                 'Fri': {
-                    'x': 1100,
+                    'x': 1120,
                     'y': 496
                 },
                 'Sat': {
-                    'x': 0,
+                    'x': 1120,
                     'y': 496
                 }
             }
@@ -281,6 +291,7 @@ mission_stage_metadata = {
         },
 
         # chips stage selector
+        # 505,910,1315
         'PR-A': {
             'schedule': {
                 'Mon': {
@@ -296,7 +307,7 @@ mission_stage_metadata = {
                     'y': 496
                 },
                 'Sun': {
-                    'x': 0,
+                    'x': 505,
                     'y': 496
                 }
             }
@@ -316,7 +327,7 @@ mission_stage_metadata = {
                     'y': 496
                 },
                 'Sat': {
-                    'x': 0,
+                    'x': 505,
                     'y': 496
                 }
             }
@@ -332,11 +343,11 @@ mission_stage_metadata = {
                     'y': 496
                 },
                 'Sat': {
-                    'x': 0,
+                    'x': 910,
                     'y': 496
                 },
                 'Sun': {
-                    'x': 0,
+                    'x': 910,
                     'y': 496
                 }
             }
@@ -352,11 +363,11 @@ mission_stage_metadata = {
                     'y': 496
                 },
                 'Sat': {
-                    'x': 0,
+                    'x': 1315,
                     'y': 496
                 },
                 'Sun': {
-                    'x': 0,
+                    'x': 1315,
                     'y': 496
                 }
             }
@@ -587,7 +598,7 @@ def return_to_main_menu(device):
         iter+=1
 
 def do_restore_sanity(device, sanity, max_sanity, full=True):
-    global restore_sanity_check
+    global restore_sanity_check, total_done
     if full:
         # go back to the main menu
         return_to_main_menu(device)
@@ -608,6 +619,7 @@ def do_restore_sanity(device, sanity, max_sanity, full=True):
         device.shell("input touchscreen tap {0} {1}".format(magic_xy['restore_sanity_onstage_tap']['x'], magic_xy['restore_sanity_onstage_tap']['y']))
         sleep(4.5)
         sanity+=max_sanity
+    total_done-=1
     print(f'\n[!!!] sanity has been restored\nsanity : {sanity}\n')
 
 
@@ -624,10 +636,11 @@ def bot_process(device, jobiter):
                 # get sanity info
                 sanity = get_sanity()
                 if jobiter==total_done:
-                    print(f'\n[!] {total_done} job is complete')
+                    print(f'\n[!] {total_done}/{jobiter} job is complete')
                     if args.only_automate:
                         return False
                     else:
+                        return_to_main_menu(device)
                         return True
                 elif '/' not in sanity:
                     print(f'\n[!] ocr error :(\n{sanity}')
@@ -640,7 +653,7 @@ def bot_process(device, jobiter):
                 tstart=time()
                 if tend:
                     print(f'\n[*]===============| time spend {int(tstart-tend)}s/{(int(tstart-tend)/60):.1f}m |===============[*]')
-                    print(f'[+] {total_done} mission has been done')
+                    print(f'[+] {total_done}/{jobiter} mission has been done')
                     print(f'[+] current sanity now is {sanity}\n')
                 tend=time()
                 total_done+=1
@@ -677,27 +690,30 @@ def bot_process(device, jobiter):
             image = do_screenshot(device)
             r,g,b = [int(j) for j in [list(i[:3]) for i in image[magic_xy['mission_complete_check']['y']]][magic_xy['mission_complete_check']['x']]]
             if {'r': r, 'g': g, 'b': b} == magic_rgb['mission_complete']:
+                sleep(1)
                 device.shell("input touchscreen tap {0} {1}".format(magic_xy['mission_complete_tap']['x'], magic_xy['mission_complete_tap']['y']))
                 break
             else:
+                rs,gs,bs = [int(j) for j in [list(i[:3]) for i in image[magic_xy['mission_error_check']['y']]][magic_xy['mission_error_check']['x']]]
                 if level_up == 15:
                     level_up=0
-                    print(f'[{r},{g},{b}] level up')
+                    print(f'[{rs},{gs},{bs}] level up')
                     device.shell("input touchscreen tap {0} {1}".format(magic_xy['mission_complete_tap']['x'], magic_xy['mission_complete_tap']['y']))
                 elif conn_err == 5:
                     print('[!!!] connection error')
                     exit(0)
-                elif ({'r': r, 'g': g, 'b': b} == {'r': 1, 'g': 1, 'b': 1} or
-                      {'r': r, 'g': g, 'b': b} == {'r': 1, 'g': 1, 'b': 0}):
+                elif ({'r': rs, 'g': gs, 'b': bs} == {'r': 1, 'g': 1, 'b': 1} or
+                      {'r': rs, 'g': gs, 'b': bs} == {'r': 1, 'g': 1, 'b': 0} or
+                      {'r': rs, 'g': gs, 'b': bs} == {'r': 12, 'g': 11, 'b': 10}):
                     level_up+=1
-                elif ({'r': r, 'g': g, 'b': b} == {'r': 115, 'g': 20, 'b': 20} or
-                      {'r': r, 'g': g, 'b': b} == {'r': 117, 'g': 20, 'b': 20}):
+                elif ({'r': rs, 'g': gs, 'b': bs} == {'r': 115, 'g': 20, 'b': 20} or
+                      {'r': rs, 'g': gs, 'b': bs} == {'r': 117, 'g': 20, 'b': 20}):
                     print('[!] connection error, re-enter')
                     device.shell("input touchscreen tap {0} {1}".format(magic_xy['connection_error_tap']['x'], magic_xy['connection_error_tap']['y']))
                     sleep(3)
                     conn_err+=1
                 else:
-                    print(f'[{r},{g},{b}] mission_complete check not found')
+                    print(f'[{r},{g},{b}]-[{rs},{gs},{bs}] mission_complete check not found')
 
 def get_stage_group_name(stage_name):
     ops_name = stage_name[::-1].split('-', 1)[1][::-1]
@@ -734,12 +750,15 @@ def bot_select_mission(device, stage_name):
         return False
 
     # must be on main menu
+    print('[open combat menu]')
     device.shell("input touchscreen tap {0} {1}".format(mission_stage_metadata[stage_group]['offset']['open_combat']['x'], mission_stage_metadata[stage_group]['offset']['open_combat']['y']))
     sleep(1)
+    print('[selecting stage]')
     device.shell("input touchscreen tap {0} {1}".format(mission_stage_metadata[stage_group]['offset']['select_stage']['x'], mission_stage_metadata[stage_group]['offset']['select_stage']['y']))
     sleep(1)
     device.shell("input touchscreen tap {0} {1}".format(mission_stage_metadata[stage_group][ops_name]['schedule'][date_now]['x'], mission_stage_metadata[stage_group][ops_name]['schedule'][date_now]['y']))
     sleep(1)
+    print(f'[go to {stage_name}]\n')
     device.shell("input touchscreen tap {0} {1}".format(mission_stage_metadata[stage_group]['offset'][f'operation_{ops_num}']['x'], mission_stage_metadata[stage_group]['offset'][f'operation_{ops_num}']['y']))
     sleep(1)
 
@@ -751,6 +770,7 @@ if __name__ == "__main__":
     parser.add_argument('-a', '--automate', type=int, dest='only_automate', help='just do automation, select the stage to automate first!')
     parser.add_argument('-s', '--sanity', action='store_true', dest='sanity_restore', help='with sanity restoration.')
     parser.add_argument('-S', '--show', action='store_true', dest='show', help='show current daily mission.')
+    parser.add_argument('-d', '--debug', action='store_true', dest='debug', help='only for debugging code.')
     args = parser.parse_args()
 
     if not args.job_list and not args.only_automate and not args.show:
@@ -767,19 +787,28 @@ if __name__ == "__main__":
     else:
         adb = Client(host='127.0.0.1', port=5037)
         device = adb.devices()[0]
-    
+
+    #test
+    if args.debug:
+        image = do_screenshot(device)
+        r,g,b = [int(j) for j in [list(i[:3]) for i in image[magic_xy['mission_complete_check']['y']]][magic_xy['mission_complete_check']['x']]]
+        print(r,g,b)
+        exit()
+
     # main
     if args.sanity_restore:
         restore_sanity=True
     if args.job_list:
         job_list=[x for x in args.job_list.split(';') if x != '']
-        for x in job_list:
+        # check stage
+        for xname in job_list:
+            if not get_stage_group_name(xname.split(':')[0]):
+                print(f'[!] {xname} not a valid stage.')
+                exit(0)
 
+        for x in job_list:
             job_name = x.split(':')[0]
             job_count = int(x.split(':')[1])
-            if not get_stage_group_name(job_name):
-                print('[!] not a valid stage.')
-                exit(0)
 
             while True:
                 if not bot_select_mission(device, job_name):
