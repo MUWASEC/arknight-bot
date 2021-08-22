@@ -16,6 +16,8 @@ job_list=[]
 total_done=0
 restore_sanity=False
 restore_sanity_check=False
+all_opens=False
+
 magic_xy = {
     'autodeploy_check' : {
         'x': 1899,
@@ -150,7 +152,8 @@ mission_stage_metadata = {
         },
 
         # supplies stage selector
-        # 300,710,1120,1510
+        # 300,710,1120,1530,1940
+        # specially open: LS, CA, SK, AP, CE
         'LS': {
             'schedule': {
                 'Mon': {
@@ -215,11 +218,11 @@ mission_stage_metadata = {
                     'y': 496
                 },
                 'Sat': {
-                    'x': 1510,
+                    'x': 1530,
                     'y': 496
                 },
                 'Sun': {
-                    'x': 1510,
+                    'x': 1530,
                     'y': 496
                 } 
             }
@@ -263,6 +266,28 @@ mission_stage_metadata = {
                     'y': 496
                 }
             }
+        },
+        'specially_open': {
+            'LS': {
+                'x': 300,
+                'y': 496
+            },
+            'CA': {
+                'x': 710,
+                'y': 496
+            },
+            'SK': {
+                'x': 1120,
+                'y': 496
+            },
+            'AP': {
+                'x': 1530,
+                'y': 496
+            },
+            'CE': {
+                'x': 1940,
+                'y': 496
+            }
         }
     },
 
@@ -291,7 +316,8 @@ mission_stage_metadata = {
         },
 
         # chips stage selector
-        # 505,910,1315
+        # 505,910,1315,1720
+        # specially open: PR-C, PR-D, PR-A, PR-B
         'PR-A': {
             'schedule': {
                 'Mon': {
@@ -372,7 +398,24 @@ mission_stage_metadata = {
                 }
             }
         },
-        
+        'specially_open': {
+            'PR-C': {
+                'x': 505,
+                'y': 496 
+            },
+            'PR-D': {
+                'x': 910,
+                'y': 496 
+            },
+            'PR-A': {
+                'x': 1315,
+                'y': 496 
+            },
+            'PR-B': {
+                'x': 1720,
+                'y': 496 
+            }
+        }
     }
 }
 
@@ -547,7 +590,7 @@ def get_sanity():
             img = cv2.medianBlur(img,9)
             str_res = pytesseract.image_to_string(img, config=custom_oem)
             if '/' in str_res and str_res[0]!='/':
-                print(f'\n[*] complete brute force at {i}\n')
+                print(f'\n[**] complete brute force at {i}\n')
                 raise Exception()
 
         # white pixels to black with GRAY
@@ -690,7 +733,7 @@ def bot_process(device, jobiter):
             image = do_screenshot(device)
             r,g,b = [int(j) for j in [list(i[:3]) for i in image[magic_xy['mission_complete_check']['y']]][magic_xy['mission_complete_check']['x']]]
             if {'r': r, 'g': g, 'b': b} == magic_rgb['mission_complete']:
-                sleep(1)
+                sleep(1.5)
                 device.shell("input touchscreen tap {0} {1}".format(magic_xy['mission_complete_tap']['x'], magic_xy['mission_complete_tap']['y']))
                 break
             else:
@@ -741,13 +784,14 @@ def bot_select_mission(device, stage_name):
         ops_name = resp[1]
         ops_num = resp[2]
 
-    date_now = datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=-11))).strftime('%a')
-    if date_now not in mission_stage_metadata[stage_group][ops_name]['schedule']:
-        print(f'[!] {stage_name} currently unavailable.')
-        exit(1)
-    elif int(ops_num) > mission_stage_metadata[stage_group]['total_stage']:
-        print(f'[!] {stage_name} is invalid.')
-        return False
+    if not all_opens:
+        date_now = datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=-11))).strftime('%a')
+        if date_now not in mission_stage_metadata[stage_group][ops_name]['schedule']:
+            print(f'[!] {stage_name} currently unavailable.')
+            exit(1)
+        elif int(ops_num) > mission_stage_metadata[stage_group]['total_stage']:
+            print(f'[!] {stage_name} is invalid.')
+            return False
 
     # must be on main menu
     print('[open combat menu]')
@@ -756,7 +800,10 @@ def bot_select_mission(device, stage_name):
     print('[selecting stage]')
     device.shell("input touchscreen tap {0} {1}".format(mission_stage_metadata[stage_group]['offset']['select_stage']['x'], mission_stage_metadata[stage_group]['offset']['select_stage']['y']))
     sleep(1)
-    device.shell("input touchscreen tap {0} {1}".format(mission_stage_metadata[stage_group][ops_name]['schedule'][date_now]['x'], mission_stage_metadata[stage_group][ops_name]['schedule'][date_now]['y']))
+    if all_opens:
+        device.shell("input touchscreen tap {0} {1}".format(mission_stage_metadata[stage_group]['specially_open'][ops_name]['x'], mission_stage_metadata[stage_group]['specially_open'][ops_name]['y']))
+    else:
+        device.shell("input touchscreen tap {0} {1}".format(mission_stage_metadata[stage_group][ops_name]['schedule'][date_now]['x'], mission_stage_metadata[stage_group][ops_name]['schedule'][date_now]['y']))
     sleep(1)
     print(f'[go to {stage_name}]\n')
     device.shell("input touchscreen tap {0} {1}".format(mission_stage_metadata[stage_group]['offset'][f'operation_{ops_num}']['x'], mission_stage_metadata[stage_group]['offset'][f'operation_{ops_num}']['y']))
@@ -767,12 +814,13 @@ def bot_select_mission(device, stage_name):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Arknight Stage Bot')
     parser.add_argument('-j', '--job-list', dest='job_list', help='ex: -j/--job-list "CE-5:20;CA-5:30"')
-    parser.add_argument('-a', '--automate', type=int, dest='only_automate', help='just do automation, select the stage to automate first!')
+    parser.add_argument('-a', '--automate', type=int, dest='only_automate', nargs='?', const=1000, help='just do automation, select the stage to automate first!')
     parser.add_argument('-s', '--sanity', action='store_true', dest='sanity_restore', help='with sanity restoration.')
     parser.add_argument('-S', '--show', action='store_true', dest='show', help='show current daily mission.')
     parser.add_argument('-d', '--debug', action='store_true', dest='debug', help='only for debugging code.')
     args = parser.parse_args()
 
+    
     if not args.job_list and not args.only_automate and not args.show:
         parser.print_help()
         exit(1)
@@ -788,7 +836,7 @@ if __name__ == "__main__":
         adb = Client(host='127.0.0.1', port=5037)
         device = adb.devices()[0]
 
-    #test
+    # debugging section
     if args.debug:
         image = do_screenshot(device)
         r,g,b = [int(j) for j in [list(i[:3]) for i in image[magic_xy['mission_complete_check']['y']]][magic_xy['mission_complete_check']['x']]]
@@ -800,11 +848,18 @@ if __name__ == "__main__":
         restore_sanity=True
     if args.job_list:
         job_list=[x for x in args.job_list.split(';') if x != '']
+        if job_list[0] == "allopens":
+            all_opens=True
+            job_list.pop(0)
+            
         # check stage
         for xname in job_list:
-            if not get_stage_group_name(xname.split(':')[0]):
+            if ':' not in xname or '-' not in xname:
+                print(f'[!] job {job_list.index(xname)+1} doesn\'t have stage level splitter "-" and job count splitter ":" (Ex: CE-5:10).')
+                exit(1)
+            elif not get_stage_group_name(xname.split(':')[0]):
                 print(f'[!] {xname} not a valid stage.')
-                exit(0)
+                exit(1)
 
         for x in job_list:
             job_name = x.split(':')[0]

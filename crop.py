@@ -12,10 +12,10 @@ image_arr = np.array(image)
 image_arr = image_arr[
     # y
     # top - bottom
-    262:335, 
+    347:626, 
     # x
     # left - right
-    127:200]
+    128:346]
   
 # Convert array to image
 image = Image.fromarray(image_arr)

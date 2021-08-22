@@ -30,9 +30,5 @@ def find_image(im, tpl):
 
     raise Exception("Image not found")
 
-img = cv2.imread('./screen.png')
-tpl = cv2.imread('./crop.png')
-
-y, x = find_image(img, tpl)
-print(x,y)
-    
+img = cv2.cvtColor(cv2.imread('./img_rec01.png'), cv2.COLOR_BGR2GRAY)
+cv2.imwrite('test.png', img)
